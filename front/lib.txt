@@ -1,0 +1,9 @@
+react-router-dom,
+redux,
+react-redux,
+redux-actions,
+immer,                      // 불변성 관련 
+redux-devtools-extension,
+typesafe-actions,           // typescript 에서 useSelector를 사용하기위한 라이블러리
+axios,
+redux-saga

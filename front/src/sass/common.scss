@@ -1,0 +1,41 @@
+$gray: #3D3D3D;
+$gray-hover: #7C7C7C;
+
+.Button {
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.25rem 1rem;
+    color: white;
+    outline: none;
+    cursor: pointer;
+    background: $gray;
+    margin-top: 1rem;
+    &:hover {
+        background: $gray-hover
+    }
+    &.fullWidth {
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        width: 100%;
+        font-size: 1.125rem;
+    }
+}
+
+.Input {
+    font-size: 1rem;
+    border: none;
+    border-bottom: 1px solid $gray-hover;
+    padding-bottom: 0.5rem;
+    outline: none;
+    width: 100%;
+    &:focus {
+        color: $gray-hover;
+        border-bottom: 1px solid $gray;
+    }
+
+    & + & {
+        margin-top: 1rem;
+    }
+}
