@@ -1,21 +1,22 @@
-import React, { useEffect } from 'react'
+import React, { FormEvent, useEffect } from 'react'
 import './../../sass/style.scss'
-import cloud from '../../images/png/png_face_cloud.png';
+import Card from './Card'
 import refresh from '../../images/png/png_line_refresh.png';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import {useDispatch, useSelector} from 'react-redux'
 import {cCodeList, searchComp} from '../../modules/company'
 import {RootState} from '../../modules'
-import {CompanyType} from '../../types/CompanyType'
+import {withRouter, RouteComponentProps} from 'react-router-dom'
 
 
-const Company: React.FC = () => {
+const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps) => {
     const dispath = useDispatch();
     let searchKeyword:string = "";
 
-    const {codeListError} = useSelector(({company}: RootState) => ({
-        codeListError: company.codeListError
+    const {codeListError, company} = useSelector(({company}: RootState) => ({
+        codeListError: company.codeListError,
+        company: company.companies
     }))
 
     // 멘유 이동 클릭 이벤트
@@ -64,15 +65,64 @@ const Company: React.FC = () => {
 
     },[codeListError])
 
+    useEffect(() => {
+        if (company) {
+            console.log("company", company);
+
+            history.push("/search");
+        }
+    },[company])
+
     // 회사 검색 이벤트
     const onSearchCo = (e: React.MouseEvent<HTMLButtonElement>) => {
-        console.log("searchKeyword", searchKeyword);
-        dispath(searchComp(searchKeyword));
+       dispath(searchComp(searchKeyword));
     }
 
     // search text change event
     const onChangeKeyword = (e: React.FormEvent<HTMLInputElement>) => {
         searchKeyword = (e.target as HTMLInputElement).value;
+    }
+
+    // 회사검색 enter처리
+    const onKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            dispath(searchComp(searchKeyword));
+        }
+    }
+
+    // 회사 상세 조회
+    const onClickForDetail = (e: React.MouseEvent<HTMLLIElement>) => {
+        const $ul = document.getElementById("warpCard") as HTMLUListElement;    // 회사 목록 영역
+        const detailArea = document.getElementById("contentDetail") as HTMLDivElement;  // 상세내용 영역
+        
+        if ($ul.classList.contains("content_selected")) {
+            // 상세보기 닫기
+            $ul.classList.remove("content_selected");
+            detailArea.style.display = "none";
+
+            displayCompany(true);
+        }
+        else {
+            // 상세보기
+
+            // 선택한 회사를 제외한 나머지 숨김
+            displayCompany(false);
+            e.currentTarget.style.display = "block";
+
+            $ul.classList.add("content_selected");
+            detailArea.style.display = "contents";
+        }
+    }
+
+    // 회사 목록 show/hide
+    const displayCompany = (isDisplay: boolean) => {
+        const $lis = (document.getElementById("warpCard") as HTMLUListElement).children;
+
+        for (let i = 0 ; i < $lis.length ; i++) {
+            const $li = ($lis.item(i) as HTMLLIElement);
+
+            $li.style.display = isDisplay ? "block" : "none";
+        }
     }
 
     return (
@@ -88,7 +138,7 @@ const Company: React.FC = () => {
                     </div>
                     <div className="search_wrap">
                         <div className="search_box">
-                            <Input  type="text" placeHolder="키워드를 입력해주세요." onChange={onChangeKeyword}/>
+                            <Input  type="text" placeHolder="키워드를 입력해주세요." onChange={onChangeKeyword} onKeyPress={onKeyPress}/>
                             <Button onClick={onSearchCo}></Button>
                         </div>
                     </div>
@@ -99,24 +149,51 @@ const Company: React.FC = () => {
                             <li id="menu_line" className="line"></li>
                         </ul>
                     </div>
-                    <ul className="tab_content">
-                        <li>
-                            <div>
-                                <p className="img">
-                                    <img src={cloud} alt="" />
-                                </p>
-                                <p className="keyword">
-                                    <span>기본</span>
-                                    <span>즐겨찾기</span>
-                                </p>
-                            </div>
-                        </li>
-
-                    </ul>
+                    <div className="wrp_tab_content">
+                        <ul id="warpCard" className="tab_content">
+                            <Card 
+                                onClick={onClickForDetail}
+                                key={1}
+                                companyName={"company name"} 
+                                companyCode={"companyCode"}
+                            />
+                             <Card 
+                                key={2}
+                                companyName={"company name"} 
+                                companyCode={"companyCode"}
+                            />
+                             <Card 
+                                key={3}
+                                companyName={"company name"} 
+                                companyCode={"companyCode"}
+                            />
+                             <Card 
+                                key={4}
+                                companyName={"company name"} 
+                                companyCode={"companyCode"}
+                            />
+                             <Card 
+                                key={5}
+                                companyName={"company name"} 
+                                companyCode={"companyCode"}
+                            />
+                             <Card 
+                                key={6}
+                                companyName={"company name"} 
+                                companyCode={"companyCode"}
+                            />
+                             <Card 
+                                key={7}
+                                companyName={"company name"} 
+                                companyCode={"companyCode"}
+                            />
+                        </ul>
+                        <div id="contentDetail" className="content_detail"> 상세 조회 영역</div>
+                    </div>
                 </div>
             </div>
         </>
     )
 };
 
-export default Company
+export default withRouter(Company);

@@ -34,8 +34,6 @@ const LoginForm: React.FC = () => {
     const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        console.log("submit??");
-
         const { username, password } = form;
 
         dispatch(login({username, password}))

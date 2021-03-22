@@ -5,4 +5,6 @@ export interface ICompany extends Document {
     companyName: string,
     companyCode: string,
     stockCode: string,
+    searchDate?: Date,
+    searchType?: string,
 }

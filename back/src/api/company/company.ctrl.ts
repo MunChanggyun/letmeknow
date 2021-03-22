@@ -1,13 +1,19 @@
 import { Context } from 'koa'
-import CompanyModel from '../../models/company'
+import CompanyModel, {ICompanyDocument} from '../../models/company'
 import mongoose from 'mongoose'
 import Joi from 'joi'
-import axios from 'axios'
 import fs from 'fs'
 import StreamZip from 'node-stream-zip' // zip 파일 관련 lib
 import xml2js from 'xml2js' // xml parser
 import { callApi } from '../../lib/callApi'
 import {IApi} from '../../lib/interfaces/IApi'
+import {getDateYYYYMMDD} from '../../lib/common'
+
+// 재무제표 api 호출 type
+type TFinanceType = {
+  report_nm: string,
+  rcept_no: string
+}
 
 /**
  * api key
@@ -87,7 +93,10 @@ export const callCodeApi = async (ctx: Context) => {
      // 기존 파일 삭제
     console.log("remove old companies info");
 
-    fs.writeFile('data/companys.zip', rows, (err) => {
+    const fileName = 'data/companys.zip';
+    const outputFileName: string = "CORPCODE.xml";
+
+    fs.writeFile(fileName, rows, (err) => {
       if (err) {
         console.log(err);
         ctx.throw(500, err.message)
@@ -99,7 +108,7 @@ export const callCodeApi = async (ctx: Context) => {
 
         console.log("success call api");
 
-        fileReadXml();
+        fileReadXml(fileName, outputFileName);
       }
     })
   } else {
@@ -135,15 +144,15 @@ export const callCodeApi = async (ctx: Context) => {
 
 }
 
-const fileReadXml = async () => {
+const fileReadXml = async (fileName:string, outputFileName: string) => {
   // zip파일 압출풀지 않고 내용만 확인 하는 방법
 
   // zip 파일
-  const zip = new StreamZip({file: 'data/companys.zip', storeEntries:true});
+  const zip = new StreamZip({file: fileName, storeEntries:true});
 
   zip.on('ready', () => {
     // zip 파일안에 CORPCODE.xml 내용
-    let zipContent = zip.entryDataSync('CORPCODE.xml').toString('utf8');
+    let zipContent = zip.entryDataSync(outputFileName).toString('utf8');
 
     // xml parser
     const parser = new xml2js.Parser();
@@ -159,6 +168,7 @@ const fileReadXml = async () => {
         console.log("start save companies infos ::" , companyList.length);
 
         try {
+          // TODO: 파일에 따른 태그 처리 
           // object 형식의 데이터 확인
           companyList.map((row:any, index:number) => {
             const {corp_name, corp_code, stock_code, modify_date} = row;
@@ -187,10 +197,12 @@ const fileReadXml = async () => {
 
 // 회사 코드검색
 export const search = async (ctx: Context) => {
-  const {companyName, sDate, eDate} = ctx.request.body;
+  const {companyName} = ctx.request.body;
+
+  const query:any = {'companyName': { $regex: companyName }}; // like 검색을 위해서 $regex를 사용한다.
 
   try {
-    const company = await CompanyModel.findCompany(companyName)
+    const company = await CompanyModel.findCompany(query);
 
     // company {
     //   _id: 6052a9cf9815e34470abddef,
@@ -200,53 +212,141 @@ export const search = async (ctx: Context) => {
     //   __v: 0
     // }
 
+    // 검색된 회사들 리턴
+  
+    ctx.status = 200;
+    ctx.body = company;
+
+
     // 회사 공시정보 조회를 위한 파라미터 설정
-    const apiParms = {
-      crtfc_key: apiKey,
-      corp_code: company.companyCode,
-      bgn_de: sDate,
-      end_de: eDate,
-      pblntf_ty: 'F'
-    }
+    // const apiParms = {
+    //   crtfc_key: apiKey,
+    //   corp_code: company.companyCode,
+    //   bgn_de: sDate,
+    //   end_de: eDate,
+    //   pblntf_ty: 'A'
+    // }
 
-    console.log("get company code ::: ", company);
+    // 최근 검색기록 저장
+    //await saveSearchLog();
 
-    await companyInfo(apiParms);
+    // await callFinanceInfo(apiParms);
 
 
   } catch (e) {
     console.log(e.message);
     ctx.throw(500, e.message);
   }
-
-  ctx.status = 200;
 }
   
+// 최근 검색기록 저장
+export const saveSearchLog = async (ctx: Context) => {
+  try {
+    const {_id, searchType} = ctx.request.body;
 
-// 회사 공시정보 조회
+    const update = await CompanyModel.findByIdAndUpdate(_id, {"searchType": searchType, "searchDate": new Date()}, {upsert:true}).exec();
+
+    if (!update) {
+      ctx.throw(500, "최근 검색 기록 저장에 실패했습니다.")
+      return;
+    }
+
+    const company:ICompanyDocument | null = await CompanyModel.findById(_id);
+
+    const companyCode = company !== null ? company.companyCode: "";
+
+    callFinanceInfo(companyCode);
+
+    // ctx.status = 200;
+    // ctx.body = [company];
+
+  } catch (e) {
+    ctx.throw(500, e.message)
+  }
+}
+
+// 회사 재무제표 api 호출 및 파일 zip파일 다운로드
 /*
-  api : https://opendart.fss.or.kr/api/list.json
-  crtfc_key	API 인증키
-  corp_code	고유번호
-  bgn_de	시작일  YYYYMMDD
-  end_de	종료일  YYYYMMDD
-  pblntf_ty	공시유형 : A
 */
-export const companyInfo = async (apiParmas: any) => {
-  console.log("call api params ::: " , apiParmas);
-
+export const callFinanceInfo = async (companyCode: string) => {
   const apiUrl = "https://opendart.fss.or.kr/api/list.json";
 
-  const params: IApi = {url: apiUrl, resType: "JSON", data: apiParmas};
+  const sDate = getDateYYYYMMDD(-3, "Y", new Date());
+  const eDate = getDateYYYYMMDD(0, "", new Date());
+
+  const apiParms = {
+    crtfc_key: apiKey,
+    corp_code: companyCode,
+    bgn_de: sDate,
+    end_de: eDate,
+    pblntf_ty: 'A'
+  }
+
+  const params: IApi = {url: apiUrl, resType: "JSON", data: apiParms};
 
   const {type, rows} = await callApi(params);
 
   if (type) {
-    console.log(rows);
+    // 사업보고서만 추출
+    const infoSet:TFinanceType[] = [];
 
-    return rows;
+    rows.list.map((row:any, index:number) => {
+      console.log(row);
+
+      if (row.report_nm.indexOf("사업보고서") > -1) {
+        const {report_nm, rcept_no}:TFinanceType = row;
+
+        infoSet.push({report_nm, rcept_no});
+      }
+    })
+
+    // 재무제표 파일 api 호출
+    console.log("infoSet", infoSet);
+    callFinanceApi(infoSet);
+
+    //TFinanceType
   } else {
     return null;
   }
+
+}
+
+// 재무제표 파일 api 호출
+const callFinanceApi = async (infoSet:TFinanceType[]) => {
+  const companyListUrl = `https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${apiKey}`
+
+  console.log("call finance code api");
+
+  const params: IApi = {url: companyListUrl, resType:"arraybuffer"};
+
+  const {type, rows} = await callApi(params);
+
+  if (type) {
+    const fileName:string = 'data/finance.zip'
+    const outputFileName: string ="";
+
+    fs.writeFile(fileName, rows, (err) => {
+      if (err) {
+        console.log(err);
+      }
+      else {
+        // 기존 파일 삭제
+        console.log("success call api");
+
+        fileReadXml(fileName, outputFileName);
+      }
+    })
+  } else {
+    console.log("API 호출에 실패했습니다.");
+  }
+}
+
+// 재무제표 파일 읽기 및 저장
+const getFinanceInfo = async () => {
+
+}
+
+// 검색한 회사의 재무제표 리턴
+const returnFinance =  () => {
 
 }

@@ -1,3 +1,4 @@
 export type CompanyType = {
-    companyName: string
+    _id: string,
+    searchType:string
 }
