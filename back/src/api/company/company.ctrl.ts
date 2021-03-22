@@ -265,7 +265,7 @@ export const saveSearchLog = async (ctx: Context) => {
   }
 }
 
-// 회사 재무제표 api 호출 및 파일 zip파일 다운로드
+// 회사 사업보고서 api 호출
 /*
 */
 export const callFinanceInfo = async (companyCode: string) => {
@@ -302,7 +302,10 @@ export const callFinanceInfo = async (companyCode: string) => {
 
     // 재무제표 파일 api 호출
     console.log("infoSet", infoSet);
-    callFinanceApi(infoSet);
+    infoSet.map((info:any, index:number) => {
+      callFinanceApi(info);
+    })
+    
 
     //TFinanceType
   } else {
@@ -311,13 +314,18 @@ export const callFinanceInfo = async (companyCode: string) => {
 
 }
 
-// 재무제표 파일 api 호출
-const callFinanceApi = async (infoSet:TFinanceType[]) => {
-  const companyListUrl = `https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${apiKey}`
+// 재무제표 파일 api 호출  TODO https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json 로 api 변경
+const callFinanceApi = async (infoSet:TFinanceType) => {
+  const companyListUrl = `https://opendart.fss.or.kr/api/fnlttXbrl.xml`
+  const apiParms = {
+    crtfc_key: apiKey,
+    rcept_no: infoSet.rcept_no,
+    reprt_code: "11011"
+  }
 
   console.log("call finance code api");
 
-  const params: IApi = {url: companyListUrl, resType:"arraybuffer"};
+  const params: IApi = {url: companyListUrl, resType:"arraybuffer", data: apiParms};
 
   const {type, rows} = await callApi(params);
 
@@ -333,7 +341,7 @@ const callFinanceApi = async (infoSet:TFinanceType[]) => {
         // 기존 파일 삭제
         console.log("success call api");
 
-        fileReadXml(fileName, outputFileName);
+        //fileReadXml(fileName, outputFileName);
       }
     })
   } else {
