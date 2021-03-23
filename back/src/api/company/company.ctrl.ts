@@ -255,7 +255,18 @@ export const saveSearchLog = async (ctx: Context) => {
 
     const companyCode = company !== null ? company.companyCode: "";
 
-    callFinanceInfo(companyCode);
+    let searchYear:number = new Date().getFullYear();
+
+    
+
+    while(searchYear > 2015) {
+      await callFinanceApi(companyCode, searchYear);
+      searchYear = searchYear - 1;
+    }
+
+    
+
+//    callFinanceInfo(companyCode);
 
     // ctx.status = 200;
     // ctx.body = [company];
@@ -300,53 +311,47 @@ export const callFinanceInfo = async (companyCode: string) => {
       }
     })
 
-    // 재무제표 파일 api 호출
-    console.log("infoSet", infoSet);
-    infoSet.map((info:any, index:number) => {
-      callFinanceApi(info);
-    })
-    
-
-    //TFinanceType
   } else {
     return null;
   }
 
 }
 
-// 재무제표 파일 api 호출  TODO https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json 로 api 변경
-const callFinanceApi = async (infoSet:TFinanceType) => {
-  const companyListUrl = `https://opendart.fss.or.kr/api/fnlttXbrl.xml`
+// 재무제표 api 호출 
+const callFinanceApi = async (companyCode:string, searchYear:number) => {
+  const companyListUrl = `https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json`
   const apiParms = {
     crtfc_key: apiKey,
-    rcept_no: infoSet.rcept_no,
-    reprt_code: "11011"
+    corp_code: companyCode,
+    bsns_year: searchYear,
+    reprt_code: "11011",
+    fs_div: "CFS"
   }
 
   console.log("call finance code api");
 
-  const params: IApi = {url: companyListUrl, resType:"arraybuffer", data: apiParms};
+  const params: IApi = {url: companyListUrl, resType:"JSON", data: apiParms};
 
-  const {type, rows} = await callApi(params);
+  try {
+    const {type, rows} = await callApi(params);
 
-  if (type) {
-    const fileName:string = 'data/finance.zip'
-    const outputFileName: string ="";
+    if (type) {
+      rows.list.map((row: any, index: number) => {
+        if (row.account_id === "dart_OperatingIncomeLoss") {
+          // 필요한 정보를 추출
 
-    fs.writeFile(fileName, rows, (err) => {
-      if (err) {
-        console.log(err);
-      }
-      else {
-        // 기존 파일 삭제
-        console.log("success call api");
+          // 영업이익
+          console.log(row);
+        }  
+      })
 
-        //fileReadXml(fileName, outputFileName);
-      }
-    })
-  } else {
-    console.log("API 호출에 실패했습니다.");
+    } else {
+      console.log("API 호출에 실패했습니다.");
+    }
+  } catch (e) {
+    console.log(e.message);
   }
+  
 }
 
 // 재무제표 파일 읽기 및 저장

@@ -7,13 +7,6 @@ export const callApi = async ({url, resType, data}:IApi) => {
         rows: null
     };
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-    console.log("url :: " , url);
-    console.log("resType :: " , resType);
-    console.log("params :: " , data);
-    
-    console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-
     await axios({url: url, method: "GET", responseType:resType, params:data})
     .then(response => {
         res.type = true
@@ -24,9 +17,6 @@ export const callApi = async ({url, resType, data}:IApi) => {
         
         
     });
-
-
-    console.log(res);
 
     return res;
 }
