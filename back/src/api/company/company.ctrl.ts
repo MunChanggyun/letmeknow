@@ -257,16 +257,16 @@ export const saveSearchLog = async (ctx: Context) => {
 
     let searchYear:number = new Date().getFullYear();
 
+    await callFinanceApi(companyCode, 2020);
+
+    // while(searchYear > 2015) {
+    //   await callFinanceApi(companyCode, searchYear);
+    //   searchYear = searchYear - 1;
+    // }
+
     
 
-    while(searchYear > 2015) {
-      await callFinanceApi(companyCode, searchYear);
-      searchYear = searchYear - 1;
-    }
-
-    
-
-//    callFinanceInfo(companyCode);
+   callFinanceInfo(companyCode);
 
     // ctx.status = 200;
     // ctx.body = [company];
@@ -306,8 +306,8 @@ export const callFinanceInfo = async (companyCode: string) => {
 
       if (row.report_nm.indexOf("사업보고서") > -1) {
         const {report_nm, rcept_no}:TFinanceType = row;
-
-        infoSet.push({report_nm, rcept_no});
+        console.log(rcept_no);
+//        infoSet.push({report_nm, rcept_no});
       }
     })
 
@@ -324,7 +324,7 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
     crtfc_key: apiKey,
     corp_code: companyCode,
     bsns_year: searchYear,
-    reprt_code: "11011",
+    reprt_code: "11014",
     fs_div: "CFS"
   }
 
@@ -336,14 +336,58 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
     const {type, rows} = await callApi(params);
 
     if (type) {
-      rows.list.map((row: any, index: number) => {
-        if (row.account_id === "dart_OperatingIncomeLoss") {
-          // 필요한 정보를 추출
+      /**
+       *                                              account_id
+       * 
+       * "account_nm": "매출액”,                        ifrs-full_Revenue
+          "account_nm": "영업이익",                     dart_OperatingIncomeLoss
+          "account_nm": "당기순이익"                    ifrs-full_ProfitLoss
+          "account_nm": "자본총계"                      ifrs-full_Equity
+          "account_nm": “부채총계"                      ifrs-full_Liabilities
+          ROE(%) : 당기순이익 / 자본총액 * 100
+          부채율(%) : 부채총계 / 자본총계 * 100
+          EPS : 당기순이익 / 주식수
+          PER : 현재주가 / EPS
+          BPS : 자본총계 / 주식수
+          PBR : 현재주가 / PBR
+       *  */  
 
-          // 영업이익
-          console.log(row);
-        }  
-      })
+          let fileStr = '';
+
+          rows.list.map((row: any, index: number) => {
+            fileStr += JSON.stringify(row) + "\n"
+          })
+
+          fs.writeFile('data/text.txt', fileStr, (err) => {
+            if (err) {
+              console.log(err);
+            }
+            else {
+              // 기존 파일 삭제
+              console.log("file down complate");
+            }
+          })
+
+
+      // rows.list.map((row: any, index: number) => {
+      //   switch (row.account_id) {
+      //     case "ifrs-full_Revenue":
+      //         console.log("매출액", row)
+      //         break;
+      //       case "dart_OperatingIncomeLoss":
+      //         console.log("영업이익", row)
+      //         break;
+      //       case "ifrs-full_ProfitLoss":
+      //         console.log("당기순이익", row)
+      //         break;
+      //       case "ifrs-full_Equity":
+      //         console.log("자본총계", row)
+      //         break;
+      //       case "ifrs-full_Liabilities":
+      //         console.log("“부채총계", row)
+      //         break;
+      //   }
+      // })
 
     } else {
       console.log("API 호출에 실패했습니다.");
