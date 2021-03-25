@@ -8,6 +8,7 @@ import xml2js from 'xml2js' // xml parser
 import { callApi } from '../../lib/callApi'
 import {IApi} from '../../lib/interfaces/IApi'
 import {getDateYYYYMMDD} from '../../lib/common'
+import krx from 'krx-stock-api';
 
 // 재무제표 api 호출 type
 type TFinanceType = {
@@ -244,6 +245,8 @@ export const saveSearchLog = async (ctx: Context) => {
   try {
     const {_id, searchType} = ctx.request.body;
 
+    console.log(_id, searchType);
+
     const update = await CompanyModel.findByIdAndUpdate(_id, {"searchType": searchType, "searchDate": new Date()}, {upsert:true}).exec();
 
     if (!update) {
@@ -266,7 +269,7 @@ export const saveSearchLog = async (ctx: Context) => {
 
     
 
-   callFinanceInfo(companyCode);
+   //callFinanceInfo(companyCode);
 
     // ctx.status = 200;
     // ctx.body = [company];
@@ -346,28 +349,38 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
           "account_nm": “부채총계"                      ifrs-full_Liabilities
           ROE(%) : 당기순이익 / 자본총액 * 100
           부채율(%) : 부채총계 / 자본총계 * 100
+
+
+          /// krx-stock-api 참고
+
+          (async () => console.log(await krx.getStock('종목코드')))();
           EPS : 당기순이익 / 주식수
           PER : 현재주가 / EPS
           BPS : 자본총계 / 주식수
           PBR : 현재주가 / PBR
+
+
        *  */  
 
-          let fileStr = '';
+          // let fileStr = '';
 
-          rows.list.map((row: any, index: number) => {
-            fileStr += JSON.stringify(row) + "\n"
-          })
+          // rows.list.map((row: any, index: number) => {
+          //   fileStr += JSON.stringify(row) + "\n"
+          // })
 
-          fs.writeFile('data/text.txt', fileStr, (err) => {
-            if (err) {
-              console.log(err);
-            }
-            else {
-              // 기존 파일 삭제
-              console.log("file down complate");
-            }
-          })
+          // fs.writeFile('data/text.txt', fileStr, (err) => {
+          //   if (err) {
+          //     console.log(err);
+          //   }
+          //   else {
+          //     // 기존 파일 삭제
+          //     console.log("file down complate");
+          //   }
+          // })
 
+      console.log("companyCode", companyCode);
+
+      console.log(await krx.getStock(companyCode));
 
       // rows.list.map((row: any, index: number) => {
       //   switch (row.account_id) {
@@ -393,7 +406,7 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
       console.log("API 호출에 실패했습니다.");
     }
   } catch (e) {
-    console.log(e.message);
+    console.log("??",e.message);
   }
   
 }
