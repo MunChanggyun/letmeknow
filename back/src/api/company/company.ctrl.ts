@@ -8,7 +8,7 @@ import xml2js from 'xml2js' // xml parser
 import { callApi } from '../../lib/callApi'
 import {IApi} from '../../lib/interfaces/IApi'
 import {getDateYYYYMMDD} from '../../lib/common'
-import krx from 'krx-stock-api';
+import { createTextChangeRange } from 'typescript'
 
 // 재무제표 api 호출 type
 type TFinanceType = {
@@ -260,19 +260,27 @@ export const saveSearchLog = async (ctx: Context) => {
 
     let searchYear:number = new Date().getFullYear();
 
-    await callFinanceApi(companyCode, 2020);
+    await callFinanceApi(companyCode, 2018);
+
+    //let financeData = [];
 
     // while(searchYear > 2015) {
-    //   await callFinanceApi(companyCode, searchYear);
+    //   const tempObj = {
+    //     year: searchYear,
+    //     rows: await callFinanceApi(companyCode, searchYear)
+    //   }
+
+    //   financeData.push(tempObj)
+      
     //   searchYear = searchYear - 1;
     // }
 
-    
+    //console.log("financeData", financeData);
 
    //callFinanceInfo(companyCode);
 
-    // ctx.status = 200;
-    // ctx.body = [company];
+    ctx.status = 200;
+    ctx.body = [company];
 
   } catch (e) {
     ctx.throw(500, e.message)
@@ -321,7 +329,7 @@ export const callFinanceInfo = async (companyCode: string) => {
 }
 
 // 재무제표 api 호출 
-const callFinanceApi = async (companyCode:string, searchYear:number) => {
+const callFinanceApi = async (companyCode:string, searchYear:number): Promise<any[]> => {
   const companyListUrl = `https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json`
   const apiParms = {
     crtfc_key: apiKey,
@@ -330,6 +338,8 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
     reprt_code: "11014",
     fs_div: "CFS"
   }
+
+  let returnData:any[] = [];
 
   console.log("call finance code api");
 
@@ -351,9 +361,7 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
           부채율(%) : 부채총계 / 자본총계 * 100
 
 
-          /// krx-stock-api 참고
-
-          (async () => console.log(await krx.getStock('종목코드')))();
+          /// 키움증권 api 참고
           EPS : 당기순이익 / 주식수
           PER : 현재주가 / EPS
           BPS : 자본총계 / 주식수
@@ -362,45 +370,42 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
 
        *  */  
 
-          // let fileStr = '';
+      let accountId:string = '';
 
-          // rows.list.map((row: any, index: number) => {
-          //   fileStr += JSON.stringify(row) + "\n"
-          // })
+      rows.list.map((row: any, index: number) => {
+        switch (row.account_nm) {
+          case "수익(매출액)":   // 매출액   frmtrm_q_nm   frmtrm_q_amount
+            accountId = 'profits';
+            returnData.push(setDataSet(row, "frmtrm_q_nm", "frmtrm_q_amount", accountId));
+            break;
+          case "영업이익":  // 영업이익   frmtrm_q_nm   frmtrm_q_amount
+          case "영업이익(손실)":
+            accountId = 'sales';
+            returnData.push(setDataSet(row, "frmtrm_q_nm", "frmtrm_q_amount", accountId));      
+            break
+          case "부채총계": // 부채총계
+            accountId = 'debt';
+            returnData.push(setDataSet(row, "frmtrm_nm", "frmtrm_amount", accountId));      
+            break
+          case "당기순이익(손실)":
+            if (row.account_nm === "당기순이익(손실)" && row.sj_div === "IS") {
+              accountId = 'netProfit';
+              returnData.push(setDataSet(row, "frmtrm_q_nm", "frmtrm_q_amount", accountId));
+            }
+            break;
+          case "자본총계":
+            if (row.account_nm === "자본총계") {
+              accountId = 'capital';
+              returnData.push(setDataSet(row, "frmtrm_nm", "frmtrm_amount", accountId));
+            }
 
-          // fs.writeFile('data/text.txt', fileStr, (err) => {
-          //   if (err) {
-          //     console.log(err);
-          //   }
-          //   else {
-          //     // 기존 파일 삭제
-          //     console.log("file down complate");
-          //   }
-          // })
+            break;
+        }   
+      })
 
-      console.log("companyCode", companyCode);
-
-      console.log(await krx.getStock(companyCode));
-
-      // rows.list.map((row: any, index: number) => {
-      //   switch (row.account_id) {
-      //     case "ifrs-full_Revenue":
-      //         console.log("매출액", row)
-      //         break;
-      //       case "dart_OperatingIncomeLoss":
-      //         console.log("영업이익", row)
-      //         break;
-      //       case "ifrs-full_ProfitLoss":
-      //         console.log("당기순이익", row)
-      //         break;
-      //       case "ifrs-full_Equity":
-      //         console.log("자본총계", row)
-      //         break;
-      //       case "ifrs-full_Liabilities":
-      //         console.log("“부채총계", row)
-      //         break;
-      //   }
-      // })
+      returnData.map((row:any) => {
+        console.log(row);
+      });
 
     } else {
       console.log("API 호출에 실패했습니다.");
@@ -409,6 +414,32 @@ const callFinanceApi = async (companyCode:string, searchYear:number) => {
     console.log("??",e.message);
   }
   
+
+  return returnData;
+}
+
+// 재무제표 데이터 셋팅
+const setDataSet = (row:any, nameCol:string, amountCol:string, accountId:string):any => {
+   // 현재
+   const tempData1 = {
+    name: row.thstrm_nm,
+    amount: row.thstrm_amount
+  }
+
+  // -1
+  const tempData2 = {
+    name: row[nameCol],
+    amount: row[amountCol]
+  }
+
+  const tempObj = {
+    // account_id: row.account_id,
+    account_id: accountId,
+    account_nm: row.account_nm,
+    data: [tempData1, tempData2]
+  }
+
+  return tempObj;
 }
 
 // 재무제표 파일 읽기 및 저장
