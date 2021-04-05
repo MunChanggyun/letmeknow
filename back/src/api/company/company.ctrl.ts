@@ -200,10 +200,21 @@ const fileReadXml = async (fileName:string, outputFileName: string) => {
 export const search = async (ctx: Context) => {
   const {companyName} = ctx.request.body;
 
-  const query:any = {'companyName': { $regex: companyName }}; // like 검색을 위해서 $regex를 사용한다.
+  console.log("companyName >>> ", companyName);
 
+  const searchName = companyName
+  // const query:any = searchType ? {'companyName': { $regex: companyName }, 'searchType': searchType }
+  //   :  {'companyName': { $regex: companyName }}; // like 검색을 위해서 $regex를 사용한다.
+
+   const query:any = {'companyName': { $regex: searchName }}; // like 검색을 위해서 $regex를 사용한다.
+  //const query:any = {'companyName': companyName}; // like 검색을 위해서 $regex를 사용한다.
+
+  
   try {
     const company = await CompanyModel.findCompany(query);
+
+
+    console.log(company);
 
     // company {
     //   _id: 6052a9cf9815e34470abddef,
@@ -241,7 +252,7 @@ export const search = async (ctx: Context) => {
 }
   
 // 최근 검색기록 저장
-export const saveSearchLog = async (ctx: Context) => {
+export const saveSearchLogAndGetDetail = async (ctx: Context) => {
   try {
     const {_id, searchType} = ctx.request.body;
 
@@ -258,29 +269,37 @@ export const saveSearchLog = async (ctx: Context) => {
 
     const companyCode = company !== null ? company.companyCode: "";
 
-    let searchYear:number = new Date().getFullYear();
+    let searchYear:number = new Date().getFullYear() -1;
 
-    await callFinanceApi(companyCode, 2018);
+    let financeData = [];
 
-    //let financeData = [];
+    while(financeData.length === 0) {
+      financeData = await callFinanceApi(companyCode, searchYear);
+      searchYear = searchYear - 1;
+    }
 
-    // while(searchYear > 2015) {
-    //   const tempObj = {
-    //     year: searchYear,
-    //     rows: await callFinanceApi(companyCode, searchYear)
-    //   }
+    while(searchYear > 2015) {
+      searchYear = searchYear - 1;
 
-    //   financeData.push(tempObj)
-      
-    //   searchYear = searchYear - 1;
-    // }
+      const financeRow = await callFinanceApi(companyCode, searchYear);
 
-    //console.log("financeData", financeData);
+      financeData.map((row: any) => {
+        financeRow.map((fRow:any) => {
+          if (fRow.account_nm.indexOf(row.account_nm) > -1) {
+            row.data.push(fRow.data[fRow.data.length-1])
+          }
+        })
+      })
+    }
+
+    financeData.map((row:any) => {
+      console.log(row);
+    })
 
    //callFinanceInfo(companyCode);
 
     ctx.status = 200;
-    ctx.body = [company];
+    ctx.body = financeData;
 
   } catch (e) {
     ctx.throw(500, e.message)
@@ -341,12 +360,14 @@ const callFinanceApi = async (companyCode:string, searchYear:number): Promise<an
 
   let returnData:any[] = [];
 
-  console.log("call finance code api");
+  console.log("call finance code api", apiParms);
 
   const params: IApi = {url: companyListUrl, resType:"JSON", data: apiParms};
 
   try {
     const {type, rows} = await callApi(params);
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", rows);
 
     if (type) {
       /**
@@ -403,9 +424,9 @@ const callFinanceApi = async (companyCode:string, searchYear:number): Promise<an
         }   
       })
 
-      returnData.map((row:any) => {
-        console.log(row);
-      });
+      // returnData.map((row:any) => {
+      //   console.log(">>>>>>>>>>>>>>>>>>>>>>>>",row);
+      // });
 
     } else {
       console.log("API 호출에 실패했습니다.");
@@ -450,4 +471,24 @@ const getFinanceInfo = async () => {
 // 검색한 회사의 재무제표 리턴
 const returnFinance =  () => {
 
+}
+
+// 최근 검색 기록
+export const latestSearch = async (ctx: Context) => {
+  try {
+    const query:any = {'searchType': 'C' }
+
+    const companies = await CompanyModel.findCompany(query);
+
+    if (!companies) {
+      ctx.status = 404;
+      ctx.body = "최근 검색된 회사가 없습니다."
+    } else {
+      ctx.status = 200;
+      ctx.body = companies;
+    }
+
+  } catch (e) {
+    ctx.throw(500, e.message)
+  }
 }

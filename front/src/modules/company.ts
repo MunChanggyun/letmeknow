@@ -12,39 +12,47 @@ const [SEARCH_COMP, SEARCH_COMP_SUCCESS, SEARCH_COMP_FAILURE] = createRequestAct
 const RE_SEARCH_COMP = 'company/RE_SEARCH_COMP';
 // 회사 검색 기록 저장
 const [SEARCH_LOG, SEARCH_LOG_SUCCESS, SEARCH_LOG_FAILURE] = createRequestActionTypes('company/SEARCH_LOG');
+// 최근 검색 목록
+const [LATEST_SEARCH, LATEST_SEARCH_SUCCESS, LATEST_SEARCH_FAILURE] = createRequestActionTypes('company/LATEST_SEARCH');
 
 // 회사 코드 최신화 액션
 export const cCodeList = createAction(CCODE);
 // 회사 검색
-export const searchComp = createAction(SEARCH_COMP, (companyName:string) =>({
-    companyName: companyName
-}));
+export const searchComp = createAction(SEARCH_COMP, (companyName:string) =>(
+    companyName
+));
 // 회사 재검색
 export const reSearchComp = createAction(RE_SEARCH_COMP, (companyName: string) => ({
     companyName: companyName
 }))
 // 회사 검색 기록 저장
-export const saveSearchLog = createAction(SEARCH_LOG, ({_id, searchType}:CompanyType) => ({
+export const saveSearchLogAndGetDetail = createAction(SEARCH_LOG, ({_id, searchType}:CompanyType) => ({
     _id: _id,
     searchType: searchType
 }))
+// 최근 검색
+export const latestSearch = createAction(LATEST_SEARCH);
 
 // 회사 코드 최신화 사가
 const cCodeSaga = createRequestSaga(CCODE, companyApi.cCodeDown)
 // 회사검색
 const searchCompSaga = createRequestSaga(SEARCH_COMP, companyApi.searchComp)
 // 회사 검색 기록 저장
-const saveSearchLogSaga = createRequestSaga(SEARCH_LOG, companyApi.saveSearchLog)
-
+const saveSearchLogAndGetDetailSaga = createRequestSaga(SEARCH_LOG, companyApi.saveSearchLogAndGetDetail)
+// 최근 검색
+const latestSearchSaga = createRequestSaga(LATEST_SEARCH, companyApi.latestSearch)
 export function* companySaga() {
     yield takeLatest(CCODE, cCodeSaga)
     yield takeLatest(SEARCH_COMP, searchCompSaga)
-    yield takeLatest(SEARCH_LOG, saveSearchLogSaga)
+    yield takeLatest(SEARCH_LOG, saveSearchLogAndGetDetailSaga)
+    yield takeLatest(LATEST_SEARCH, latestSearchSaga)
 }
 
 const initialState = {
     codeListError: null,
     companies: null,
+    latestCompany: null,
+    finances: null
 };
 
 const company = handleActions({
@@ -69,21 +77,29 @@ const company = handleActions({
     [RE_SEARCH_COMP]: (state, {payload: company}:any) =>({
         ...state,
         companies: (state.companies || []).filter((com:any, index: number) => {
-            console.log(com.companyName, company.companyName, com.companyName.indexOf(company.companyName));
-
             return com.companyName.indexOf(company.companyName) > -1
         })
     }),
-    [SEARCH_LOG_SUCCESS]: (state, {payload: compnay}:any) => ({
+    [SEARCH_LOG_SUCCESS]: (state, {payload: finances}:any) => ({
         ...state,
         codeListError: null,
-        companies: compnay
+        finances: finances
     }),
     [SEARCH_LOG_FAILURE]: (state, {payload: error}:any) => ({
         ...state,
         codeListError: error,
-        companies: null,
+        finances: null,
     }),
+    [LATEST_SEARCH_SUCCESS]: (state, {payload: companies}:any) =>({
+        ...state,
+        latestCompany: companies,
+        codeListError: null
+    }),
+    [LATEST_SEARCH_FAILURE]: (state, {payload: error}:any) => ({
+        ...state,
+        latestCompany: null,
+        codeListError: error
+    })
 }, initialState);
 
 export default company

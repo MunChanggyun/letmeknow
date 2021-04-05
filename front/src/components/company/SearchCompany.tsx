@@ -5,7 +5,7 @@ import {RootState} from '../../modules'
 import Input from '../common/Input';
 import Button from '../common/Button';
 import Card from './Card'
-import {reSearchComp, saveSearchLog} from '../../modules/company'
+import {reSearchComp, saveSearchLogAndGetDetail} from '../../modules/company'
 import {CompanyType} from '../../types/CompanyType';
 
 const SearchCompany: React.FC<RouteComponentProps> = ({history}: RouteComponentProps) => {
@@ -48,7 +48,7 @@ const SearchCompany: React.FC<RouteComponentProps> = ({history}: RouteComponentP
         
         const params:CompanyType = {_id, searchType:"C"};
 
-        dispatch(saveSearchLog(params))
+        dispatch(saveSearchLogAndGetDetail(params))
     }
 
     return (

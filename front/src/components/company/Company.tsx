@@ -1,22 +1,27 @@
-import React, { FormEvent, useEffect } from 'react'
+import React, { FormEvent, useEffect, useState } from 'react'
 import './../../sass/style.scss'
 import Card from './Card'
+import Finance from './Finance'
 import refresh from '../../images/png/png_line_refresh.png';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import {useDispatch, useSelector} from 'react-redux'
-import {cCodeList, searchComp} from '../../modules/company'
+import {cCodeList, searchComp, latestSearch, saveSearchLogAndGetDetail} from '../../modules/company'
 import {RootState} from '../../modules'
 import {withRouter, RouteComponentProps} from 'react-router-dom'
+import {CompanyType} from '../../types/CompanyType';
 
 
 const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps) => {
-    const dispath = useDispatch();
+    const dispatch = useDispatch();
+    const [isDisplay, setIsDisplay] = useState(false);
     let searchKeyword:string = "";
 
-    const {codeListError, company} = useSelector(({company}: RootState) => ({
+    const {codeListError, company, latestCompany, finances} = useSelector(({company}: RootState) => ({
         codeListError: company.codeListError,
-        company: company.companies
+        company: company.companies,
+        latestCompany: company.latestCompany,
+        finances: company.finances
     }))
 
     // 멘유 이동 클릭 이벤트
@@ -52,7 +57,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
     const onUpdateCode = (e: React.MouseEvent<HTMLImageElement>) => {
         e.preventDefault();
 
-        dispath(cCodeList());
+        dispatch(cCodeList());
     }
 
     useEffect(() => {
@@ -65,6 +70,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
 
     },[codeListError])
 
+    // 회사 검색 후 회사 리스트 화면으로 이동
     useEffect(() => {
         if (company) {
             console.log("company", company);
@@ -73,9 +79,18 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
         }
     },[company])
 
+    // 최근 검색 회사 조회
+    useEffect(() => {
+        if (!latestCompany) {
+            dispatch(latestSearch())
+        }
+
+        console.log(latestCompany);
+    },[dispatch, latestCompany])
+
     // 회사 검색 이벤트
     const onSearchCo = (e: React.MouseEvent<HTMLButtonElement>) => {
-       dispath(searchComp(searchKeyword));
+       dispatch(searchComp(searchKeyword));
     }
 
     // search text change event
@@ -86,42 +101,89 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
     // 회사검색 enter처리
     const onKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
-            dispath(searchComp(searchKeyword));
+            dispatch(searchComp(searchKeyword));
         }
     }
 
-    // 회사 상세 조회
-    const onClickForDetail = (e: React.MouseEvent<HTMLLIElement>) => {
+    // 검색기록 저장 및 세부내역 조회
+    const onCLickForDetail = (index: number) => {
         const $ul = document.getElementById("warpCard") as HTMLUListElement;    // 회사 목록 영역
-        const detailArea = document.getElementById("contentDetail") as HTMLDivElement;  // 상세내용 영역
-        
-        if ($ul.classList.contains("content_selected")) {
-            // 상세보기 닫기
-            $ul.classList.remove("content_selected");
-            detailArea.style.display = "none";
 
-            displayCompany(true);
+        if ($ul.children[index].classList.contains("selected")) {
+            // 전체 보기
+            $ul.children[index].classList.remove("selected")
+            setIsDisplay(true)
         }
         else {
-            // 상세보기
-
-            // 선택한 회사를 제외한 나머지 숨김
-            displayCompany(false);
-            e.currentTarget.style.display = "block";
-
-            $ul.classList.add("content_selected");
-            detailArea.style.display = "contents";
-        }
+            // 세부 보기
+            $ul.children[index].classList.add("selected")
+        
+            // 검색 기록 저장
+            const {_id} = (latestCompany || [])[index]; 
+            
+            const params:CompanyType = {_id, searchType:"C"};
+            setIsDisplay(false)
+            //dispatch(saveSearchLogAndGetDetail(params))
+        }        
     }
+
+    useEffect(() =>{
+        const $ul = document.getElementById("warpCard") as HTMLUListElement;    // 회사 목록 영역
+        
+        // console.log("is Show?", $ul.classList.contains("content_selected"));
+
+        // console.log("finances", finances);
+
+        // if ($ul.classList.contains("content_selected")) {
+        //     // 상세보기 닫기
+            
+        // }
+        // else {
+        //     // 상세보기
+
+        //     // 선택한 회사를 제외한 나머지 숨김
+            
+        //     //e.currentTarget.style.display = "block";
+        // }
+
+        displayCompany(isDisplay);
+    }, [isDisplay]) 
 
     // 회사 목록 show/hide
     const displayCompany = (isDisplay: boolean) => {
+        const $ul = document.getElementById("warpCard") as HTMLUListElement;    // 회사 목록 영역
+        const detailArea = document.getElementById("contentDetail") as HTMLDivElement;  // 상세내용 영역
         const $lis = (document.getElementById("warpCard") as HTMLUListElement).children;
 
         for (let i = 0 ; i < $lis.length ; i++) {
             const $li = ($lis.item(i) as HTMLLIElement);
 
+            console.log(isDisplay ? "block" : "none");
+            console.log($li);
+
             $li.style.display = isDisplay ? "block" : "none";
+        }
+
+        if (isDisplay) {
+            // 상세보기 닫기
+            $ul.classList.remove("content_selected");
+            detailArea.style.display = "none";
+        }
+        else {
+            // 상세보기)
+
+            $ul.classList.add("content_selected");
+            detailArea.style.display = "contents";
+
+            for (let i = 0 ; i < $lis.length ; i++) {
+                const $li = ($lis.item(i) as HTMLLIElement);
+    
+                if ($li.classList.contains("selected")) {
+                    $li.style.display = "block";
+                }
+
+                // $li.classList.remove("selected")
+            }
         }
     }
 
@@ -151,44 +213,16 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
                     </div>
                     <div className="wrp_tab_content">
                         <ul id="warpCard" className="tab_content">
-                            <Card 
-                                onClick={onClickForDetail}
-                                key={1}
-                                companyName={"company name"} 
-                                companyCode={"companyCode"}
-                            />
-                             <Card 
-                                key={2}
-                                companyName={"company name"} 
-                                companyCode={"companyCode"}
-                            />
-                             <Card 
-                                key={3}
-                                companyName={"company name"} 
-                                companyCode={"companyCode"}
-                            />
-                             <Card 
-                                key={4}
-                                companyName={"company name"} 
-                                companyCode={"companyCode"}
-                            />
-                             <Card 
-                                key={5}
-                                companyName={"company name"} 
-                                companyCode={"companyCode"}
-                            />
-                             <Card 
-                                key={6}
-                                companyName={"company name"} 
-                                companyCode={"companyCode"}
-                            />
-                             <Card 
-                                key={7}
-                                companyName={"company name"} 
-                                companyCode={"companyCode"}
-                            />
+                            {latestCompany && (latestCompany || []).map((com: any, index:number) => (
+                                <Card 
+                                    key={com._id}
+                                    onClick={() => onCLickForDetail(index)}
+                                    companyName={com.companyName} 
+                                    companyCode={com.companyCode}
+                                />
+                            ))}
                         </ul>
-                        <div id="contentDetail" className="content_detail"> 상세 조회 영역</div>
+                        <div id="contentDetail" className="content_detail"> <Finance/></div>
                     </div>
                 </div>
             </div>

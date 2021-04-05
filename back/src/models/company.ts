@@ -18,7 +18,7 @@ export interface ICompanyDocument extends ICompany {
 }
 
 interface ICompanyModel extends Model<ICompanyDocument> {
-    findCompany(companyName:string): Promise<ICompanyDocument>,
+    findCompany(query:any): Promise<ICompanyDocument>,
     updateCompany(companyName:string): Promise<ICompanyDocument>,
     removeCompanies(): Promise<ICompanyDocument>
 }
@@ -30,6 +30,8 @@ CompanySchema.statics.removeCompanies = async function(this:Model<ICompanyDocume
 
 // 회사명으로 회사 코드 찾기 
 CompanySchema.statics.findCompany = async function(this:Model<ICompanyDocument>, query:any) {
+    console.log(query)
+
     return this.find(query);
 }
 

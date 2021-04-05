@@ -12,7 +12,10 @@ company.post('/companyCode', companyCtrl.callCodeApi)
 // 회사 검색
 company.post('/search', companyCtrl.search)
 
-// 회사 최근검색 목록
-company.post('/saveSearchLog', companyCtrl.saveSearchLog)
+// 회사 검색 기록 저장
+company.post('/saveSearchLogAndGetDetail', companyCtrl.saveSearchLogAndGetDetail)
+
+// 최근 검색 기록
+company.post('/latestSearch', companyCtrl.latestSearch)
 
 export default company;
