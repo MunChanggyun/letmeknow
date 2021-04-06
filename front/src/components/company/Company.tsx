@@ -10,18 +10,20 @@ import {cCodeList, searchComp, latestSearch, saveSearchLogAndGetDetail} from '..
 import {RootState} from '../../modules'
 import {withRouter, RouteComponentProps} from 'react-router-dom'
 import {CompanyType} from '../../types/CompanyType';
-
+import {FinanceType} from '../../types/FinanceType'
 
 const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps) => {
     const dispatch = useDispatch();
-    const [isDisplay, setIsDisplay] = useState(false);
+    const [isDisplay, setIsDisplay] = useState(true);
+    const [tempFinance, setTempFinance] = useState<FinanceType[]>([]);  // TODO 삭제 예정 20210406 임시 데이터 상태
     let searchKeyword:string = "";
 
-    const {codeListError, company, latestCompany, finances} = useSelector(({company}: RootState) => ({
+    const {codeListError, company, latestCompany, finances, message} = useSelector(({company}: RootState) => ({
         codeListError: company.codeListError,
         company: company.companies,
         latestCompany: company.latestCompany,
-        finances: company.finances
+        finances: company.finances,
+        message: company.message
     }))
 
     // 멘유 이동 클릭 이벤트
@@ -73,7 +75,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
     // 회사 검색 후 회사 리스트 화면으로 이동
     useEffect(() => {
         if (company) {
-            console.log("company", company);
+            // console.log("company", company);
 
             history.push("/search");
         }
@@ -85,7 +87,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
             dispatch(latestSearch())
         }
 
-        console.log(latestCompany);
+        // console.log(latestCompany);
     },[dispatch, latestCompany])
 
     // 회사 검색 이벤트
@@ -127,28 +129,23 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
         }        
     }
 
+    // 회사 상세 내역 show/hide
     useEffect(() =>{
-        const $ul = document.getElementById("warpCard") as HTMLUListElement;    // 회사 목록 영역
-        
-        // console.log("is Show?", $ul.classList.contains("content_selected"));
-
-        // console.log("finances", finances);
-
-        // if ($ul.classList.contains("content_selected")) {
-        //     // 상세보기 닫기
-            
-        // }
-        // else {
-        //     // 상세보기
-
-        //     // 선택한 회사를 제외한 나머지 숨김
-            
-        //     //e.currentTarget.style.display = "block";
-        // }
+        //const $ul = document.getElementById("warpCard") as HTMLUListElement;    // 회사 목록 영역
 
         displayCompany(isDisplay);
-    }, [isDisplay]) 
 
+        if (message && !isDisplay) {
+            // 오류 메시지 출력
+            console.log("message", message);
+            //alert(message);
+        }
+        else {
+            tempData();
+        }
+    }, [isDisplay, message]) 
+
+    
     // 회사 목록 show/hide
     const displayCompany = (isDisplay: boolean) => {
         const $ul = document.getElementById("warpCard") as HTMLUListElement;    // 회사 목록 영역
@@ -157,10 +154,6 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
 
         for (let i = 0 ; i < $lis.length ; i++) {
             const $li = ($lis.item(i) as HTMLLIElement);
-
-            console.log(isDisplay ? "block" : "none");
-            console.log($li);
-
             $li.style.display = isDisplay ? "block" : "none";
         }
 
@@ -170,8 +163,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
             detailArea.style.display = "none";
         }
         else {
-            // 상세보기)
-
+            // 상세보기
             $ul.classList.add("content_selected");
             detailArea.style.display = "contents";
 
@@ -181,10 +173,50 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
                 if ($li.classList.contains("selected")) {
                     $li.style.display = "block";
                 }
-
-                // $li.classList.remove("selected")
             }
         }
+    }
+
+    // TODO 삭제 예정 2021 04 06 : 임시 데이터
+    const tempData = () => {
+        const tempData:FinanceType[] = [
+                {
+                    account_id: "profits",
+                    account_nm: "수익(매출액)",
+                    data: [
+                        {
+                            name: "51",
+                            amount: "51"
+                        }, 
+                        {
+                            name: "50",
+                            amount: "50"
+                        }, 
+                        {
+                            name: "49",
+                            amount: "49"
+                        }]
+                },
+                {
+                    account_id: "sales",
+                    account_nm: "영업이익",
+                    data: [
+                        {
+                            name: "48",
+                            amount: "48"
+                        }, 
+                        {
+                            name: "47",
+                            amount: "47"
+                        }, 
+                        {
+                            name: "46",
+                            amount: "46"
+                        }]
+                }
+            ]
+        setTempFinance(tempData)
+            
     }
 
     return (
@@ -222,7 +254,10 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
                                 />
                             ))}
                         </ul>
-                        <div id="contentDetail" className="content_detail"> <Finance/></div>
+                        <div id="contentDetail" className="content_detail"> 
+                            <Finance finance={tempFinance}/>{/* TODO 변경예정 20210406 redux로 관리 변경시 finacne parameter는 삭제 */}
+                            
+                        </div>
                     </div>
                 </div>
             </div>

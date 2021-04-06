@@ -1,8 +1,15 @@
 import React from 'react'
+import {FinanceDataType} from '../../types/FinanceType'
 
-const Td:React.FC = () => {
+type Props = {
+    children: JSX.Element | string
+}
+
+const Td:React.FC<Props> = ({children}: Props) => {
     return (
-        <Td></Td>
+        <td>
+            {children}
+        </td>
     )
 }
 

@@ -3,3 +3,8 @@ export interface IApi {
     resType: any,
     data?: any
 }
+
+export interface IApiReturn {
+    returnData: any[],
+    message: string
+}

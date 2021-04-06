@@ -52,7 +52,8 @@ const initialState = {
     codeListError: null,
     companies: null,
     latestCompany: null,
-    finances: null
+    finances: null,
+    message: null,
 };
 
 const company = handleActions({
@@ -80,10 +81,11 @@ const company = handleActions({
             return com.companyName.indexOf(company.companyName) > -1
         })
     }),
-    [SEARCH_LOG_SUCCESS]: (state, {payload: finances}:any) => ({
+    [SEARCH_LOG_SUCCESS]: (state, {payload: result}:any) => ({
         ...state,
         codeListError: null,
-        finances: finances
+        finances: result.finances,
+        message: result.message
     }),
     [SEARCH_LOG_FAILURE]: (state, {payload: error}:any) => ({
         ...state,

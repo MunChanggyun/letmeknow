@@ -6,9 +6,10 @@ import fs from 'fs'
 import StreamZip from 'node-stream-zip' // zip 파일 관련 lib
 import xml2js from 'xml2js' // xml parser
 import { callApi } from '../../lib/callApi'
-import {IApi} from '../../lib/interfaces/IApi'
+import {IApi, IApiReturn} from '../../lib/interfaces/IApi'
 import {getDateYYYYMMDD} from '../../lib/common'
-import { createTextChangeRange } from 'typescript'
+
+
 
 // 재무제표 api 호출 type
 type TFinanceType = {
@@ -269,37 +270,44 @@ export const saveSearchLogAndGetDetail = async (ctx: Context) => {
 
     const companyCode = company !== null ? company.companyCode: "";
 
-    let searchYear:number = new Date().getFullYear() -1;
+    let searchYear:number = new Date().getFullYear();
 
-    let financeData = [];
+    let initRow:IApiReturn = {
+      returnData: [], 
+      message: ''
+    } 
 
-    while(financeData.length === 0) {
-      financeData = await callFinanceApi(companyCode, searchYear);
-      searchYear = searchYear - 1;
+    // 현재년도 (기준) 조회
+    initRow = await callFinanceApi(companyCode, searchYear);
+    searchYear = searchYear - 1;
+
+    // 현재 년도에 조회가 안되는경우
+    if (initRow.returnData.length === 0) {
+      initRow = await callFinanceApi(companyCode, searchYear);
     }
 
-    while(searchYear > 2015) {
-      searchYear = searchYear - 1;
-
-      const financeRow = await callFinanceApi(companyCode, searchYear);
-
-      financeData.map((row: any) => {
-        financeRow.map((fRow:any) => {
-          if (fRow.account_nm.indexOf(row.account_nm) > -1) {
-            row.data.push(fRow.data[fRow.data.length-1])
-          }
+    if (initRow.returnData.length > 0) {
+      while(searchYear > 2015) {
+        searchYear = searchYear - 1;
+  
+        const {returnData, message} = await callFinanceApi(companyCode, searchYear);
+  
+        initRow.returnData.map((row: any) => {
+          returnData.map((fRow:any) => {
+            if (fRow.account_nm.indexOf(row.account_nm) > -1) {
+              row.data.push(fRow.data[fRow.data.length-1])
+            }
+          })
         })
-      })
+      }
     }
 
-    financeData.map((row:any) => {
-      console.log(row);
-    })
+    console.log("result >>>>>", initRow);
 
    //callFinanceInfo(companyCode);
 
     ctx.status = 200;
-    ctx.body = financeData;
+    ctx.body = initRow;
 
   } catch (e) {
     ctx.throw(500, e.message)
@@ -348,7 +356,7 @@ export const callFinanceInfo = async (companyCode: string) => {
 }
 
 // 재무제표 api 호출 
-const callFinanceApi = async (companyCode:string, searchYear:number): Promise<any[]> => {
+const callFinanceApi = async (companyCode:string, searchYear:number): Promise<IApiReturn> => {
   const companyListUrl = `https://opendart.fss.or.kr/api/fnlttSinglAcntAll.json`
   const apiParms = {
     crtfc_key: apiKey,
@@ -358,8 +366,8 @@ const callFinanceApi = async (companyCode:string, searchYear:number): Promise<an
     fs_div: "CFS"
   }
 
-  let returnData:any[] = [];
-
+  let returnData:any[] = []
+  let message =''
   console.log("call finance code api", apiParms);
 
   const params: IApi = {url: companyListUrl, resType:"JSON", data: apiParms};
@@ -392,6 +400,10 @@ const callFinanceApi = async (companyCode:string, searchYear:number): Promise<an
        *  */  
 
       let accountId:string = '';
+
+      if (!rows.list) {
+        message = rows.message
+      }
 
       rows.list.map((row: any, index: number) => {
         switch (row.account_nm) {
@@ -435,8 +447,9 @@ const callFinanceApi = async (companyCode:string, searchYear:number): Promise<an
     console.log("??",e.message);
   }
   
+  const returnValue: IApiReturn = {returnData, message};
 
-  return returnData;
+  return returnValue;
 }
 
 // 재무제표 데이터 셋팅
