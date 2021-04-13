@@ -10,7 +10,7 @@ type trProps = {
 
 const Tr:React.FC<trProps> = ({trRow, tagType}: trProps) => {
     return (
-        <tr>
+        <tr className="rowStyle">
             {tagType === "head" ? (
                 // trRow && <Th>{trRow.account_nm}</Th>
                 trRow && 

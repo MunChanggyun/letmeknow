@@ -7,7 +7,7 @@ type Props = {
 
 const Td:React.FC<Props> = ({children}: Props) => {
     return (
-        <td>
+        <td  className="rowStyle">
             {children}
         </td>
     )

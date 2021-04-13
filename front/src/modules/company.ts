@@ -84,7 +84,7 @@ const company = handleActions({
     [SEARCH_LOG_SUCCESS]: (state, {payload: result}:any) => ({
         ...state,
         codeListError: null,
-        finances: result.finances,
+        finances: result.returnData,
         message: result.message
     }),
     [SEARCH_LOG_FAILURE]: (state, {payload: error}:any) => ({

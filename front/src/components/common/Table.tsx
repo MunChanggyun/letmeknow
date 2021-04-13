@@ -9,6 +9,15 @@ type financeProps = {
 const Table:React.FC<financeProps> = ({finances}: financeProps) => {
     return (
         <table>
+            <colgroup>
+				<col width="350"/>
+				<col width="280"/>
+                <col width="280"/>
+                <col width="280"/>
+                <col width="280"/>
+                <col width="280"/>
+                <col width="280"/>
+			</colgroup>
             <thead>
                 {finances && (<Tr trRow={finances[0]} tagType={"head"}/>)}
             </thead>

@@ -125,7 +125,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
             
             const params:CompanyType = {_id, searchType:"C"};
             setIsDisplay(false)
-            //dispatch(saveSearchLogAndGetDetail(params))
+            dispatch(saveSearchLogAndGetDetail(params))
         }        
     }
 
@@ -165,7 +165,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
         else {
             // 상세보기
             $ul.classList.add("content_selected");
-            detailArea.style.display = "contents";
+            detailArea.style.display = "block";
 
             for (let i = 0 ; i < $lis.length ; i++) {
                 const $li = ($lis.item(i) as HTMLLIElement);
@@ -255,7 +255,7 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
                             ))}
                         </ul>
                         <div id="contentDetail" className="content_detail"> 
-                            <Finance finance={tempFinance}/>{/* TODO 변경예정 20210406 redux로 관리 변경시 finacne parameter는 삭제 */}
+                            <Finance />{/*<Finance finance={tempFinance}/> TODO 변경예정 20210406 redux로 관리 변경시 finacne parameter는 삭제 */}
                             
                         </div>
                     </div>
