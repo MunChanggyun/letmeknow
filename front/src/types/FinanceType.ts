@@ -8,3 +8,8 @@ export type FinanceDataType = {
     name: string,
     amount: string
 }
+
+export type FinanceInfoType = {
+    key: string,
+    value: string
+}

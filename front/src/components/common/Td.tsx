@@ -2,12 +2,13 @@ import React from 'react'
 import {FinanceDataType} from '../../types/FinanceType'
 
 type Props = {
-    children: JSX.Element | string
+    children: JSX.Element | string,
+    className?: string
 }
 
-const Td:React.FC<Props> = ({children}: Props) => {
+const Td:React.FC<Props> = ({children, className}: Props) => {
     return (
-        <td  className="rowStyle">
+        <td  className={`rowStyle ${className && className}`}>
             {children}
         </td>
     )

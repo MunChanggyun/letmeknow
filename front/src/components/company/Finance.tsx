@@ -11,6 +11,8 @@ const Finance: React.FC = () => {
         finances: company.finances
     }))
 
+    console.log(finances)
+
     return (
         <Table finances={(finances || [])}/>
     )

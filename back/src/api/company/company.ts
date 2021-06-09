@@ -18,4 +18,7 @@ company.post('/saveSearchLogAndGetDetail', companyCtrl.saveSearchLogAndGetDetail
 // 최근 검색 기록
 company.post('/latestSearch', companyCtrl.latestSearch)
 
+// test
+company.post('/test', companyCtrl.test)
+
 export default company;

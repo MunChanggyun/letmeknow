@@ -48,12 +48,16 @@ export function* companySaga() {
     yield takeLatest(LATEST_SEARCH, latestSearchSaga)
 }
 
-const initialState = {
-    codeListError: null,
+const initialState:any = {
+    codeListError:null,
     companies: null,
     latestCompany: null,
     finances: null,
+    finInfo: null,
     message: null,
+    priceInfo: null,
+    riskInfo: null,
+    checkBuy: null,
 };
 
 const company = handleActions({
@@ -85,12 +89,21 @@ const company = handleActions({
         ...state,
         codeListError: null,
         finances: result.returnData,
-        message: result.message
+        finInfo: result.financeInfo,
+        message: result.message,
+        priceInfo: result.priceInfo,
+        riskInfo: result.riskInfo,
+        checkBuy: result.checkBuy
     }),
     [SEARCH_LOG_FAILURE]: (state, {payload: error}:any) => ({
         ...state,
         codeListError: error,
+        finInfo: null,
         finances: null,
+        priceInfo: null,
+        riskInfo: null,
+        checkBuy: null,
+        message: error
     }),
     [LATEST_SEARCH_SUCCESS]: (state, {payload: companies}:any) =>({
         ...state,

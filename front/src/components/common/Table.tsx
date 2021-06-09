@@ -1,31 +1,33 @@
 import React from 'react'
-import {FinanceType} from '../../types/FinanceType'
+import {FinanceType, FinanceInfoType} from '../../types/FinanceType'
 import Tr from './Tr'
 
 type financeProps = {
-    finances :FinanceType[]
+    finances? :FinanceType[],
+    finInfo? : FinanceInfoType[]
 }
 
-const Table:React.FC<financeProps> = ({finances}: financeProps) => {
+const Table:React.FC<financeProps> = ({finances, finInfo}: financeProps) => {
+    let tempArray:FinanceInfoType[] = [];
     return (
         <table>
-            <colgroup>
-				<col width="350"/>
-				<col width="280"/>
-                <col width="280"/>
-                <col width="280"/>
-                <col width="280"/>
-                <col width="280"/>
-                <col width="280"/>
-			</colgroup>
             <thead>
                 {finances && (<Tr trRow={finances[0]} tagType={"head"}/>)}
             </thead>
             <tbody>
                 {finances && (finances || []).map((row:any, index:number) => (<Tr key={index} trRow={row} tagType={"body"}/>))}
+                {finInfo && (finInfo || []).map((row:any, index:number) => {
+                    if (index%2 === 0) {
+                        tempArray = [];
+                    }
+
+                    tempArray.push(row);
+                   
+                    return tempArray.length === 2 && (<Tr key={row._id} trInfo={tempArray} tagType={"body"}/>) 
+                })}
             </tbody>
         </table>
     )
 }
 
-export default Table
+export default React.memo(Table)

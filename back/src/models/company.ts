@@ -18,9 +18,10 @@ export interface ICompanyDocument extends ICompany {
 }
 
 interface ICompanyModel extends Model<ICompanyDocument> {
-    findCompany(query:any): Promise<ICompanyDocument>,
+    findCompany(query?:any): Promise<ICompanyDocument>,
     updateCompany(companyName:string): Promise<ICompanyDocument>,
-    removeCompanies(): Promise<ICompanyDocument>
+    removeCompanies(): Promise<ICompanyDocument>,
+    findAll(): Promise<ICompanyDocument[]>
 }
 
 CompanySchema.statics.removeCompanies = async function(this:Model<ICompanyDocument>) {
@@ -29,7 +30,7 @@ CompanySchema.statics.removeCompanies = async function(this:Model<ICompanyDocume
 }
 
 // 회사명으로 회사 코드 찾기 
-CompanySchema.statics.findCompany = async function(this:Model<ICompanyDocument>, query:any) {
+CompanySchema.statics.findCompany = async function(this:Model<ICompanyDocument>, query?:any) {
     console.log(query)
 
     return this.find(query);
@@ -38,6 +39,11 @@ CompanySchema.statics.findCompany = async function(this:Model<ICompanyDocument>,
 // 업데이트
 CompanySchema.statics.updateCompany = async function(this:Model<ICompanyDocument>, query:any) {
     return this.updateOne(query);
+}
+
+// 모든 회사코드 찾기
+CompanySchema.statics.findAll = async function(this:Model<ICompanyDocument>) {
+    return this.find();
 }
 
 const CompanyModel = mongoose.model<ICompanyDocument, ICompanyModel>("company", CompanySchema);

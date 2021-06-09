@@ -5,11 +5,7 @@ import mongoose from 'mongoose'
 import api from './api'
 import jwtMiddlware from './lib/jwtMiddlware';
 import 'dotenv/config'
-import axios from 'axios'
-import fs from 'fs'
-import StreamZip from 'node-stream-zip' // zip 파일 관련 lib
-import xml2js from 'xml2js' // xml parser
-
+import {callFindBluChip} from './api/company/findStock'
 
 const app = new koa();
 app.use(bodyParser());
@@ -35,6 +31,7 @@ app.use(router.routes()).use(router.allowedMethods);
 
 app.listen(PORT, () => {
     console.log("node server connect port is ", PORT);
+    callFindBluChip();
 })
 
 

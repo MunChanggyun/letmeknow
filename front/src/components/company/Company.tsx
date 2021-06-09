@@ -2,6 +2,7 @@ import React, { FormEvent, useEffect, useState } from 'react'
 import './../../sass/style.scss'
 import Card from './Card'
 import Finance from './Finance'
+import FinInfo from './FinInfo'
 import refresh from '../../images/png/png_line_refresh.png';
 import Input from '../common/Input';
 import Button from '../common/Button';
@@ -18,11 +19,13 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
     const [tempFinance, setTempFinance] = useState<FinanceType[]>([]);  // TODO 삭제 예정 20210406 임시 데이터 상태
     let searchKeyword:string = "";
 
-    const {codeListError, company, latestCompany, finances, message} = useSelector(({company}: RootState) => ({
+    const {codeListError, company, latestCompany, finances, priceInfo, checkBuy, message} = useSelector(({company}: RootState) => ({
         codeListError: company.codeListError,
         company: company.companies,
         latestCompany: company.latestCompany,
         finances: company.finances,
+        priceInfo: company.priceInfo,
+        checkBuy: company.checkBuy,
         message: company.message
     }))
 
@@ -140,9 +143,6 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
             console.log("message", message);
             //alert(message);
         }
-        else {
-            tempData();
-        }
     }, [isDisplay, message]) 
 
     
@@ -164,7 +164,10 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
         }
         else {
             // 상세보기
+            const isBuyClass = (checkBuy && checkBuy.isBuy) ? 'blue-border' : 'red-border'
+
             $ul.classList.add("content_selected");
+            //detailArea.classList.add(isBuyClass);
             detailArea.style.display = "block";
 
             for (let i = 0 ; i < $lis.length ; i++) {
@@ -177,47 +180,6 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
         }
     }
 
-    // TODO 삭제 예정 2021 04 06 : 임시 데이터
-    const tempData = () => {
-        const tempData:FinanceType[] = [
-                {
-                    account_id: "profits",
-                    account_nm: "수익(매출액)",
-                    data: [
-                        {
-                            name: "51",
-                            amount: "51"
-                        }, 
-                        {
-                            name: "50",
-                            amount: "50"
-                        }, 
-                        {
-                            name: "49",
-                            amount: "49"
-                        }]
-                },
-                {
-                    account_id: "sales",
-                    account_nm: "영업이익",
-                    data: [
-                        {
-                            name: "48",
-                            amount: "48"
-                        }, 
-                        {
-                            name: "47",
-                            amount: "47"
-                        }, 
-                        {
-                            name: "46",
-                            amount: "46"
-                        }]
-                }
-            ]
-        setTempFinance(tempData)
-            
-    }
 
     return (
         <>
@@ -254,8 +216,47 @@ const Company: React.FC<RouteComponentProps> = ({ history }:RouteComponentProps)
                                 />
                             ))}
                         </ul>
-                        <div id="contentDetail" className="content_detail"> 
+                        <div id="contentDetail" className={`content_detail ${checkBuy && checkBuy.isBuy ? 'blue-border' : 'red-border'}`}> 
                             <Finance />{/*<Finance finance={tempFinance}/> TODO 변경예정 20210406 redux로 관리 변경시 finacne parameter는 삭제 */}
+                            <br />
+                            <FinInfo />
+                            {priceInfo && (
+                                <>
+                                    <br />
+                                    <div className="Div">
+                                        <div>
+                                            <div>
+                                                <p className="red-message price ">{checkBuy?.message}</p> 
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div>
+                                                <p className="title">S-RIM (수익율 8%)</p>
+                                                <p className="price">{priceInfo?.s_rim8}</p> 
+                                                {/* <div>{priceInfo.s_rim8}</div> 이렇게 사용하면
+                                                    Object is possibly 'null'. 오류를 발생시킨다.
+                                                    이는 typescript 입장에서 봤을때는 priceInfo 가 빈값인지 확신할 수 없을떄 나온느 오류로
+                                                    옵셔닝 체이닝으로 해결한다.
+                                                */}
+                                            </div>
+                                            <div>
+                                                <p className="title">S-RIM (수익율 7%)</p>
+                                                <p className="price">{priceInfo?.s_rim7}</p> 
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div>
+                                                <p className="title">적정주가 (수익율 8%)</p>
+                                                <p className="price">{priceInfo?.prePrice8}</p> 
+                                            </div>
+                                            <div>
+                                                <p className="title">적정주가 (수익율 7%)</p>
+                                                <p className="price">{priceInfo?.prePrice7}</p> 
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                             
                         </div>
                     </div>
